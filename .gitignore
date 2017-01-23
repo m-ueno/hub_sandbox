@@ -1,4 +1,12 @@
+*.pdf
+*.png
+*.ppt*
+*.txt
+
+# prefer: git config core.ignorecase true
+
 bundle/
 __pycache__/
 uploaded/
 luigi-server*
+
