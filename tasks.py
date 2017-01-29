@@ -3,6 +3,7 @@ import time
 from subprocess import check_output
 import json
 import luigi
+from luigi.contrib.esindex import CopyToIndex
 
 
 class WordCount(luigi.Task):
@@ -150,6 +151,26 @@ class parseTxt(luigi.Task):
 
         with self.output().open('w') as f:
             f.write(json.dumps(slides))
+
+
+class DBInsert(CopyToIndex):
+
+    index = 'example'
+    doc_type = 'pptpage'
+    purge_existing_index = False  # True: DROP&CREATE, False: INSERT
+    marker_index_hist_size = 1    # GET /update_log/
+
+    ppt_path = luigi.Parameter()
+
+    def requires(self):
+        return parseTxt(ppt_path=self.ppt_path)  # => .json
+
+    def docs(self):
+
+        with self.input().open() as f:
+            pages = json.loads(f.read())
+
+        return pages
 
 
 if __name__ == '__main__':
