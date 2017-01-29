@@ -2,12 +2,19 @@ import os
 import hug
 from subprocess import check_output, call
 from logging import getLogger, StreamHandler, DEBUG, INFO
+from hug_middleware_cors import CORSMiddleware
+from elasticsearch import Elasticsearch
 
 log = getLogger(__name__)
 log.setLevel(INFO)
 handler = StreamHandler()
 handler.setLevel(INFO)
 log.addHandler(handler)
+
+api = hug.API(__name__)
+api.http.add_middleware(CORSMiddleware(api))
+
+es = Elasticsearch()
 
 
 def generate_thumbnail(path: str):
@@ -45,3 +52,13 @@ def upload_file(user: hug.directives.user, name, upload_file):
     post_upload(path=outfile)
 
     return {'url': outfile, 'name': name, 'length': len(upload_file)}
+
+
+@hug.get('/search')
+def search():
+    res = es.search(
+        index="example",
+        filter_path=['hits.hits._source', 'hits.hits._score', 'hits.count'],
+        body={"query": {"match_all": {}}})
+
+    return res
