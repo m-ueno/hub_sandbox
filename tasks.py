@@ -1,6 +1,7 @@
 import os
 import time
 from subprocess import check_output
+import json
 import luigi
 
 
@@ -102,6 +103,53 @@ class GenerateThumbnail(luigi.Task):
             d=self.outdir,
         )
         check_output(cmd, shell=True)
+
+
+class Slide():
+
+    def __init__(self, text, filename, page, url):
+        self.filename = filename
+        self.page = page
+        self.text = text
+        self.url = url
+
+    def __dict__(self):
+        return dict(
+            filename=self.filename,
+            page=self.page,
+            text=self.text,
+        )
+
+    @classmethod
+    def parse_file(cls, path):
+        with open(path) as f:
+            buf = f.read()
+
+        pages = buf.split('\f')
+        filename = os.path.basename(path)
+
+        return [Slide(text=content.strip(), filename=filename, page=i, url=path)
+                for (i, content) in enumerate(pages)]
+
+
+class parseTxt(luigi.Task):
+    ppt_path = luigi.Parameter()
+    outdir = luigi.Parameter(default=os.path.join(os.getcwd(), 'json'))
+
+    def requires(self):
+        return PDF2TXT(ppt_path=self.ppt_path)  # => .txt
+
+    def output(self):
+        basename = os.path.basename(self.input().path)
+        self.basename = os.path.splitext(basename)[0]
+
+        return luigi.LocalTarget(os.path.join(self.outdir, '{}.json'.format(basename)))
+
+    def run(self):
+        slides = [s.__dict__() for s in Slide.parse_file(self.input().path)]
+
+        with self.output().open('w') as f:
+            f.write(json.dumps(slides))
 
 
 if __name__ == '__main__':
