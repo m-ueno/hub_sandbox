@@ -11,4 +11,4 @@ python-mimeparse==1.6.0
 requests==2.13.0
 six==1.10.0
 tornado==4.4.2
-urllib3==1.20
+urllib3==1.26.5
